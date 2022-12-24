@@ -6,6 +6,8 @@ const app = express();
 const EmployeeModel = require('./models/employee');
 const EmployeeMoventModel = require('./models/employeeMovent');
 const ManagerMoventModel = require('./models/managerMovent');
+const ManagerModel = require('./models/manager');
+const DeveloperModel = require('./models/developer');
 
 app.use(express.json());
 
@@ -98,14 +100,33 @@ app.get("/read-employee-movent", (req, res) => {
   })
 });
 
+app.get('/read-developer', (req, res) => {
+  DeveloperModel.find({}, (err, result) => {
+    if(err) {
+      res.send(err);
+    } else {
+      res.send(result);
+    }
+  })
+});
+
+app.get('/read-manager', (req, res) => {
+  ManagerModel.find({}, (err,result) => {
+    if(err){
+      res.send(err);
+    } else {
+      res.send(result);
+    }
+  })
+});
+
 app.get("/read-employee", (req, res) => {
   EmployeeModel.find({}, (err, result) => {
     if(err) {
       res.send(err);
+    } else {
+      res.send(result);
     }
-
-    res.send(result);
-
   })
 });
 
