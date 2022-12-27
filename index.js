@@ -3,12 +3,12 @@ const mongoose = require('mongoose');
 
 const cors = require('cors');
 const app = express();
-const EmployeeModel = require('./models/employee');
-const EmployeeMoventModel = require('./models/employeeMovent');
 const ManagerMoventModel = require('./models/managerMovent');
-const ManagerModel = require('./models/manager');
+const EmployeeMoventModel = require('./models/employeeMovent');
 const DeveloperModel = require('./models/developer');
-
+const ManagerModel = require('./models/manager');
+const EmployeeModel = require('./models/employee');
+const ReportModel = require('./models/report');
 app.use(express.json());
 
 const corsOptions ={
@@ -59,24 +59,126 @@ app.post('/insert-employee-movent', async (req, res) => {
   }
 });
 
+app.post('/insert-developer', async (req, res) => {
+  const data = {
+    developerName: req.body.developerName,
+    developerLastname: req.body.developerLastname,
+    developerPhoneNumbers: [req.body.developerPhoneNumber],
+    developerEmailAddresses: [req.body.developerEmailAddress],
+    developerPrimaryPhoneNumber: req.body.developerPhoneNumber,
+    developerCredentials: {
+      developerPrimaryEmailAddress: req.body.developerEmailAddress,
+      developerPassword: req.body.developerPassword
+    },
+  };
+  console.log(data);
+  const developer = new DeveloperModel(data);
+  try {
+    await developer.save();
+    res.send({ status: true });
+  } catch(error) {
+    console.log(error);
+    res.send({ status: false });
+  }
+});
+
+app.post('/insert-manager', async (req, res) => {
+  const data = {
+    _id: req.body._id,
+    managerName: req.body.moventName,
+    managerLastname: req.body.moventLastname,
+    managerAge: req.body.moventAge,
+    managerPhoneNumbers: [req.body.moventPhoneNumber],
+    managerPrimaryPhoneNumber: req.body.moventPhoneNumber,
+    managerEmailAddresses: [req.body.moventEmailAddress],
+    managerCredentials: {
+      managerPrimaryEmailAddress: req.body.moventEmailAddress,
+      managerPassword: req.body.moventPassword
+    },
+    managerEmployees: [],
+  };
+  const manager = new ManagerModel(data);
+  try {
+    await manager.save();
+    res.send('inserted data');
+  } catch(error) {
+    console.log(error);
+  };
+});
+
 app.post('/insert-employee', async (req, res) => {
   const data = {
-    employeeName: req.body.employeeName,
-    employeeLastname: req.body.employeeLastname,
-    employeeAge: req.body.employeeAge,
-    employeePhoneNumbers: req.body.employeePhoneNumbers,
-    employeePrimaryPhoneNumber: req.body.employeePrimaryPhoneNumber,
-    employeeEmailAddresses: req.body.employeeEmailAddresses,
-    employeeCredentials: req.body.employeeCredentials,
-    employeeManagerId: mongoose.Types.ObjectId(req.body.employeeManagerId),
-    employeeReports: req.body.employeeReports
+    _id: req.body._id,
+    employeeName: req.body.moventName,
+    employeeLastname: req.body.moventLastname,
+    employeeAge: req.body.moventAge,
+    employeePhoneNumbers: [req.body.moventPhoneNumber],
+    employeePrimaryPhoneNumber: req.body.moventPhoneNumber,
+    employeeEmailAddresses: [req.body.moventEmailAddress],
+    employeeCredentials: {
+      employeePrimaryEmailAddress: req.body.moventEmailAddress,
+      employeePassword: req.body.moventPassword
+    },
+    employeeManagerId: mongoose.Types.ObjectId(req.body.requestedManagerId),
+    employeeReports: [],
   };
   const employee = new EmployeeModel(data);
   try{
     await employee.save();
+    console.log(req.body.requestedManagerId, req.body._id);
+    await ManagerModel.updateOne(
+      { _id: req.body.requestedManagerId }, 
+      { $push: { managerEmployees: mongoose.Types.ObjectId(req.body._id) } }
+  );
     res.send('inserted data');
   } catch(error) {
     console.log(error);
+  }
+});
+
+app.delete("/delete-developer/:id", async (req, res) => {
+  const { id } = req.params;
+  await DeveloperModel.findByIdAndRemove(id).exec();
+  res.send(true);
+});
+
+app.delete("/delete-employee/:id", async (req, res) => {
+  const { id } = req.params;
+  await EmployeeModel.findByIdAndRemove(id).exec();
+  res.send(true);
+});
+
+app.delete("/delete-manager/:id", async (req, res) => {
+  const { id } = req.params;
+  await ManagerModel.findByIdAndRemove(id).exec();
+  res.send(true);
+});
+
+app.delete("/delete-employee-movent/:id", async (req, res) => {
+  const { id } = req.params;
+  await EmployeeMoventModel.findByIdAndRemove(id).exec();
+  res.send(true);
+});
+
+app.delete("/delete-manager-movent/:id", async (req, res) => {
+  const { id } = req.params;
+  await ManagerMoventModel.findByIdAndRemove(id).exec();
+  res.send(true);
+});
+
+app.get("/read-report/:id", async (req, res) => {
+  const { id } = req.params;
+  if (id === 'all') {
+    ReportModel.find({}, (err, result) => {
+      if(err) {
+        res.send(err);
+      } else {
+        res.send(result);
+      }
+    });
+  } else {
+    const result = await ReportModel.find({ reporterEmployeeId: mongoose.Types.ObjectId(id) }).exec();
+    res.send(result);
   }
 });
 
@@ -90,14 +192,21 @@ app.get("/read-manager-movent", (req, res) => {
   })
 });
 
-app.get("/read-employee-movent", (req, res) => {
-  EmployeeMoventModel.find({}, (err, result) => {
-    if(err) {
-      res.send(err);
-    } else {
-      res.send(result);
-    }
-  })
+app.get("/read-employee-movent/:managerId", async (req, res) => {
+  const { managerId } = req.params;
+  if (managerId === 'all') {
+    EmployeeMoventModel.find({}, (err, result) => {
+      if(err) {
+        res.send(err);
+      } else {
+        res.send(result);
+      }
+    })
+  } else {
+    const result = await EmployeeMoventModel.find({ requestedManagerId: managerId }).exec();
+    res.send(result);
+  }
+
 });
 
 app.get('/read-developer', (req, res) => {
@@ -110,24 +219,36 @@ app.get('/read-developer', (req, res) => {
   })
 });
 
-app.get('/read-manager', (req, res) => {
-  ManagerModel.find({}, (err,result) => {
-    if(err){
-      res.send(err);
-    } else {
-      res.send(result);
-    }
-  })
+app.get('/read-manager/:email', async (req, res) => {
+  const { email } = req.params;
+  if (email === 'all') {
+    ManagerModel.find({}, (err,result) => {
+      if(err){
+        res.send(err);
+      } else {
+        res.send(result);
+      }
+    })
+  } else {
+    const result = await ManagerModel.find({ 'managerCredentials.managerPrimaryEmailAddress': email }).exec();
+    res.send(result);
+  }
 });
 
-app.get("/read-employee", (req, res) => {
-  EmployeeModel.find({}, (err, result) => {
-    if(err) {
-      res.send(err);
-    } else {
-      res.send(result);
-    }
-  })
+app.get("/read-employee/:employeeId", async (req, res) => {
+  const { employeeId } = req.params;
+  if (employeeId === 'all') {
+    EmployeeModel.find({}, (err, result) => {
+      if(err) {
+        res.send(err);
+      } else {
+        res.send(result);
+      }
+    })
+  } else {
+    const result = await EmployeeModel.find({ _id: employeeId }).exec();
+    res.send(result);
+  }
 });
 
 app.listen(3001, () => {
