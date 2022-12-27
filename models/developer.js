@@ -21,11 +21,11 @@ const DeveloperSchema = new mongoose.Schema({
       required: false
     },
     developerCredentials: {
-      employeePrimaryEmailAddress: {
+      developerPrimaryEmailAddress: {
         type: String,
         required: true
       },
-      employeePassword: {
+      developerPassword: {
         type: String,
         required: true
       }

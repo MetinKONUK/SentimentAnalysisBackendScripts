@@ -1,5 +1,9 @@
 const mongoose = require('mongoose');
 const ManagerSchema = new mongoose.Schema({
+    _id: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true
+    },
     managerName: {
       type: String,
       required: true
@@ -25,7 +29,7 @@ const ManagerSchema = new mongoose.Schema({
       required: false
     },
     managerCredentials: {
-      employeePrimaryEmailAddress: {
+      managerPrimaryEmailAddress: {
         type: String,
         required: true
       },

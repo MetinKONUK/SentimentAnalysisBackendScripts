@@ -27,6 +27,10 @@ const ManagerMoventSchema = new mongoose.Schema({
     moventEmailAddress: {
       type: String,
       required: true
+    },
+    moventPassword: {
+      type: String,
+      required: true
     }
 }, {versionKey: false, collection: 'manager-register-request-collection'});
 
