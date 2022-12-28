@@ -9,6 +9,9 @@ const DeveloperModel = require('./models/developer');
 const ManagerModel = require('./models/manager');
 const EmployeeModel = require('./models/employee');
 const ReportModel = require('./models/report');
+const ScrapedDataModel = require('./models/scrapedData');
+
+mongoose.set('strictQuery', false);
 app.use(express.json());
 
 const corsOptions ={
@@ -166,6 +169,11 @@ app.delete("/delete-manager-movent/:id", async (req, res) => {
   res.send(true);
 });
 
+app.delete("/delete-report/:id", async (req, res) => {
+  const { id } = req.params;
+  await ReportModel.findByIdAndRemove(id).exec();
+});
+
 app.get("/read-report/:id", async (req, res) => {
   const { id } = req.params;
   if (id === 'all') {
@@ -180,6 +188,16 @@ app.get("/read-report/:id", async (req, res) => {
     const result = await ReportModel.find({ reporterEmployeeId: mongoose.Types.ObjectId(id) }).exec();
     res.send(result);
   }
+});
+
+app.get("/read-scraped-data", (req, res) => {
+  ScrapedDataModel.find({}, (err, result) => {
+    if(err) {
+      res.send(err);
+    } else {
+      res.send(result);
+    }
+  })
 });
 
 app.get("/read-manager-movent", (req, res) => {
